@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Checklist TEN INTERNET</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f6ff;
+            margin: 0;
+            padding: 20px;
+            color: #003366;
+        }
+        .container {
+            max-width: 850px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            border-top: 8px solid #ffcc00;
+        }
+        h1 {
+            text-align: center;
+            color: #003366;
+        }
+        label {
+            font-weight: bold;
+            margin-top: 12px;
+            display: block;
+        }
+        select, input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border-radius: 6px;
+            border: 1px solid #bbcce6;
+        }
+        button {
+            margin-top: 18px;
+            padding: 12px;
+            width: 100%;
+            background: #003fa3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #002b73;
+        }
+        .resultado {
+            margin-top: 20px;
+            padding: 15px;
+            background: #eaf2ff;
+            border-left: 5px solid #003fa3;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Checklist de Estrutura TEN INTERNET</h1>
+
+    <label>Público estimado:</label>
+    <input id="publico" type="number" placeholder="Ex: 1500">
+
+    <label>Área do evento (m²):</label>
+    <input id="area" type="number" placeholder="Ex: 8000">
+
+    <label>Ambiente:</label>
+    <select id="ambiente">
+        <option value="">Selecione</option>
+        <option value="indoor">Indoor</option>
+        <option value="outdoor">Outdoor</option>
+        <option value="ambos">Ambos</option>
+    </select>
+
+    <label>Possui ponto de energia?</label>
+    <select id="energia">
+        <option value="">Selecione</option>
+        <option value="sim">Sim</option>
+        <option value="nao">Não</option>
+    </select>
+
+    <label>Backbone / CTO disponível?</label>
+    <select id="backbone">
+        <option value="">Selecione</option>
+        <option value="sim">Sim</option>
+        <option value="nao">Não</option>
+    </select>
+
+    <button onclick="calcular()">Calcular Estrutura Ideal</button>
+
+    <div id="resultado" class="resultado" style="display:none;"></div>
+</div>
+
+<script>
+function calcular() {
+    const publico = parseInt(document.getElementById("publico").value);
+    const area = parseInt(document.getElementById("area").value);
+    const ambiente = document.getElementById("ambiente").value;
+    const energia = document.getElementById("energia").value;
+    const backbone = document.getElementById("backbone").value;
+
+    let erros = [];
+
+    if (!publico) erros.push("Público estimado não informado");
+    if (!area) erros.push("Área do evento não informada");
+    if (!ambiente) erros.push("Ambiente não selecionado");
+    if (!energia) erros.push("Informação sobre ponto de energia ausente");
+    if (!backbone) erros.push("Disponibilidade de backbone/CTO não informada");
+
+    if (erros.length > 0) {
+        document.getElementById("resultado").style.display = "block";
+        document.getElementById("resultado").innerHTML =
+            "<b>FALTANDO INFORMAÇÕES:</b><br>" + erros.join("<br>");
+        return;
+    }
+
+    let retornoEnergia = "";
+    if (energia === "nao") retornoEnergia = "<br><b>NECESSÁRIO SOLICITAR PONTO DE ENERGIA</b>";
+
+    // Cálculo de APs
+    let apsHuawei = Math.ceil(publico / 1000);
+    let apsGrandstream = Math.ceil(publico / 500);
+
+    // Cálculo de raio baseado na área
+    let areaHuawei = 11000;
+    let areaGrandstream = 7800;
+
+    let apsHuaweiArea = Math.ceil(area / areaHuawei);
+    let apsGrandArea = Math.ceil(area / areaGrandstream);
+
+    let apsHuaweiFinal = Math.max(apsHuawei, apsHuaweiArea);
+    let apsGrandFinal = Math.max(apsGrandstream, apsGrandArea);
+
+    // DISTRIBUIÇÃO INDOOR/OUTDOOR QUANDO AMBOS
+    let distribuicao = "";
+    if (ambiente === "ambos") {
+        let indoor = Math.floor(apsHuaweiFinal / 2);
+        let outdoor = Math.floor(apsHuaweiFinal / 2);
+
+        if (apsHuaweiFinal % 2 !== 0) outdoor++; // prioridade ao outdoor
+
+        distribuicao = `<br><br><b>Distribuição recomendada:</b><br>
+        Indoor: ${indoor} APs<br>
+        Outdoor: ${outdoor} APs`;
+    }
+
+    // Router recomendado
+    let router = "";
+    if (publico <= 150) router = "RB 750gr3";
+    else if (publico <= 800) router = "RB 4011";
+    else router = "CCR (1009 ou 1036)";
+    if (publico >= 2000) router = "CCR1036 (preferencial acima de 2K pessoas)";
+
+    document.getElementById("resultado").style.display = "block";
+    document.getElementById("resultado").innerHTML = `
+        <b>Recomendações:</b><br>
+        Router: ${router}<br><br>
+        APs Huawei necessários: <b>${apsHuaweiFinal}</b><br>
+        APs Grandstream necessários: <b>${apsGrandFinal}</b><br>
+        ${distribuicao}
+        ${retornoEnergia}
+    `;
+}
+</script>
+
+</body>
+</html>
